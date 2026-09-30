@@ -1,0 +1,17 @@
+defaults: { risk: denied, reason: "no matching rule" }
+deny_namespaces: [kube-system, kube-public, monitoring, opspilot]
+approval_timeout_minutes: 30
+rules:
+  - tool: rollout_restart
+    namespaces: [demo]
+    risk: auto
+    reason: "restart is low-risk in demo"
+  - tool: rollout_undo
+    namespaces: [demo]
+    risk: approval
+    reason: "rollback changes the running version"
+  - tool: scale
+    namespaces: [demo]
+    risk: approval
+    constraints: { replicas_min: 1, replicas_max: 5 }
+    reason: "scaling changes capacity"
