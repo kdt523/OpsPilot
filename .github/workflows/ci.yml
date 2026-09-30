@@ -35,3 +35,19 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+  demo-shop:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: demo-shop } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run pytest -q
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint deploy/helm/demo-shop
+      - run: helm template demo deploy/helm/demo-shop > /dev/null

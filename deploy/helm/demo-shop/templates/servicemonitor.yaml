@@ -1,0 +1,16 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: demo-shop
+  labels: { release: kube-prometheus-stack }
+spec:
+  selector:
+    matchLabels: { part-of: demo-shop }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      # metrics carry their own `service` label; keep it instead of the k8s Service name
+      honorLabels: true
+{{- end }}

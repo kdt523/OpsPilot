@@ -1,0 +1,9 @@
+id: redis-down
+title: Redis dependency scaled to zero
+expected_category: dependency_down
+expected_fix: [scale]
+# The alert fires for inventory/gateway; the fix targets redis-demo.
+target: { namespace: demo, deployment: redis-demo }
+inject:
+  - ["scale", "deployment/redis-demo", "--replicas=0", "-n", "demo"]
+wait_for_alert: { alertname: HighErrorRate, timeout_s: 300 }

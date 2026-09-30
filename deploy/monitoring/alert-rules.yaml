@@ -1,0 +1,61 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: opspilot-demo-alerts
+  namespace: monitoring
+  labels: { release: kube-prometheus-stack }
+spec:
+  groups:
+    - name: opspilot-demo
+      rules:
+        - alert: PodNotHealthy
+          expr: >-
+            label_replace(
+              max by (namespace, pod, container, reason) (
+                kube_pod_container_status_waiting_reason{namespace="demo", reason=~"CrashLoopBackOff|ImagePullBackOff|ErrImagePull|CreateContainerConfigError"}
+              ) == 1,
+              "deployment", "$1", "pod", "^(.*)-[a-z0-9]+-[a-z0-9]+$")
+          for: 1m
+          labels: { severity: critical }
+          annotations:
+            summary: "Container {{ $labels.container }} in {{ $labels.pod }} is {{ $labels.reason }}"
+
+        - alert: PodOOMKilled
+          expr: >-
+            label_replace(
+              max by (namespace, pod, container) (
+                kube_pod_container_status_last_terminated_reason{namespace="demo", reason="OOMKilled"}
+              ) == 1,
+              "deployment", "$1", "pod", "^(.*)-[a-z0-9]+-[a-z0-9]+$")
+          for: 0m
+          labels: { severity: critical }
+          annotations:
+            summary: "Container {{ $labels.container }} in {{ $labels.pod }} was OOMKilled"
+
+        - alert: HighErrorRate
+          expr: >-
+            label_replace(
+              sum by (namespace, service) (rate(http_requests_total{namespace="demo", status=~"5.."}[1m]))
+                / sum by (namespace, service) (rate(http_requests_total{namespace="demo"}[1m])) > 0.05,
+              "deployment", "$1", "service", "(.*)")
+          for: 1m
+          labels: { severity: warning }
+          annotations:
+            summary: "Service {{ $labels.service }} 5xx ratio is above 5%"
+
+        - alert: HighLatencyP99
+          expr: >-
+            label_replace(
+              histogram_quantile(0.99, sum by (le, namespace, service) (rate(http_request_duration_seconds_bucket{namespace="demo"}[2m]))) > 1,
+              "deployment", "$1", "service", "(.*)")
+          for: 2m
+          labels: { severity: warning }
+          annotations:
+            summary: "Service {{ $labels.service }} p99 latency is above 1s"
+
+        - alert: DeploymentReplicasUnavailable
+          expr: kube_deployment_status_replicas_unavailable{namespace="demo"} > 0
+          for: 2m
+          labels: { severity: warning }
+          annotations:
+            summary: "Deployment {{ $labels.deployment }} has unavailable replicas"

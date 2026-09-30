@@ -1,0 +1,84 @@
+# kube-prometheus-stack values for local k3d (SPEC 4.3, 6.2). Memory-lean, k3s-safe.
+fullnameOverride: kube-prometheus-stack
+
+# k3s does not expose these components' metrics endpoints
+kubeControllerManager: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeProxy: { enabled: false }
+kubeEtcd: { enabled: false }
+
+prometheusOperator:
+  resources:
+    requests: { cpu: 20m, memory: 48Mi }
+    limits: { memory: 128Mi }
+
+prometheus:
+  prometheusSpec:
+    retention: 12h
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { memory: 768Mi }
+
+alertmanager:
+  alertmanagerSpec:
+    # Secret `opspilot-webhook` (key: token) is created by `make monitoring`
+    secrets: [opspilot-webhook]
+    resources:
+      requests: { cpu: 10m, memory: 32Mi }
+      limits: { memory: 64Mi }
+  config:
+    global: { resolve_timeout: 5m }
+    route:
+      receiver: "null"
+      group_by: [alertname, namespace, deployment]
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 30m
+      routes:
+        - receiver: opspilot
+          matchers: ['namespace="demo"']
+    receivers:
+      - name: "null"
+      - name: opspilot
+        webhook_configs:
+          # Points at the Phase 2 service; delivery fails (and retries) until it exists.
+          - url: http://opspilot-api.opspilot.svc:8000/webhooks/alertmanager
+            send_resolved: true
+            http_config:
+              authorization:
+                type: Bearer
+                credentials_file: /etc/alertmanager/secrets/opspilot-webhook/token
+
+grafana:
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s/grafana/"
+      serve_from_sub_path: true
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    path: /grafana
+    hosts: [""]
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    # SPEC 4.3 says 192Mi, but Grafana OOMKilled at that limit (see ADR 005)
+    limits: { memory: 384Mi }
+  sidecar:
+    dashboards: { enabled: true, label: grafana_dashboard, labelValue: "1" }
+
+kube-state-metrics:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 96Mi }
+
+prometheus-node-exporter:
+  resources:
+    requests: { cpu: 10m, memory: 16Mi }
+    limits: { memory: 48Mi }

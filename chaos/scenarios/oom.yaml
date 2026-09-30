@@ -1,0 +1,8 @@
+id: oom
+title: Memory limit too low (inventory OOMKilled)
+expected_category: oom
+expected_fix: [rollout_undo]
+target: { namespace: demo, deployment: inventory }
+inject:
+  - ["set", "resources", "deployment/inventory", "--limits=memory=64Mi", "-n", "demo"]
+wait_for_alert: { alertname: PodOOMKilled, timeout_s: 300 }

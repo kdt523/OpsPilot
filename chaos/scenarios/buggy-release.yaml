@@ -1,0 +1,8 @@
+id: buggy-release
+title: Buggy release (v2-bug returns 5xx for ~30% of requests)
+expected_category: bad_deploy
+expected_fix: [rollout_undo]
+target: { namespace: demo, deployment: orders }
+inject:
+  - ["set", "image", "deployment/orders", "shop=ghcr.io/kdt523/opspilot-demo-shop:v2-bug", "-n", "demo"]
+wait_for_alert: { alertname: HighErrorRate, timeout_s: 300 }

@@ -1,0 +1,8 @@
+id: bad-image-tag
+title: Bad image tag deployed
+expected_category: image_pull
+expected_fix: [rollout_undo]
+target: { namespace: demo, deployment: orders }
+inject:
+  - ["set", "image", "deployment/orders", "shop=ghcr.io/kdt523/opspilot-demo-shop:does-not-exist", "-n", "demo"]
+wait_for_alert: { alertname: PodNotHealthy, timeout_s: 300 }

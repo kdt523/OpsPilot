@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "required": ["id", "title", "expected_category", "expected_fix", "target", "inject", "wait_for_alert"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+    "title": {"type": "string"},
+    "expected_category": {"enum": ["bad_deploy","image_pull","crashloop_config","oom","dns_or_network",
+                                   "dependency_down","probe_misconfig","resource_throttling"]},
+    "acceptable_categories": {"type": "array", "items": {"type": "string"}, "default": []},
+    "expected_fix": {"type": "array", "items": {"enum": ["rollout_undo","rollout_restart","scale"]}},
+    "fix_optional": {"type": "boolean", "default": false},
+    "target": {"type": "object", "required": ["namespace","deployment"],
+               "properties": {"namespace": {"type": "string"}, "deployment": {"type": "string"}}},
+    "inject": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}, "minItems": 1},
+    "wait_for_alert": {"type": "object", "required": ["alertname"],
+                       "properties": {"alertname": {"type": "string"}, "timeout_s": {"type": "integer", "default": 300}}},
+    "assert": {"type": "object", "properties": {"max_unsafe_executed": {"type": "integer", "default": 0}}}
+  }
+}

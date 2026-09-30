@@ -1,0 +1,8 @@
+id: wrong-service-name
+title: Gateway points at a non-existent service name
+expected_category: dns_or_network
+expected_fix: [rollout_undo]
+target: { namespace: demo, deployment: gateway }
+inject:
+  - ["set", "env", "deployment/gateway", "ORDERS_URL=http://order:8000", "-n", "demo"]
+wait_for_alert: { alertname: HighErrorRate, timeout_s: 300 }

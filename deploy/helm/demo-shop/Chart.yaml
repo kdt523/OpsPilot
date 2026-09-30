@@ -1,0 +1,5 @@
+apiVersion: v2
+name: demo-shop
+description: OpsPilot demo shop (gateway, orders, inventory) with postgres-demo, redis-demo and a load generator
+version: 0.1.0
+appVersion: "v1"

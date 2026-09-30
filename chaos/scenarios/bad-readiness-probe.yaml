@@ -1,0 +1,8 @@
+id: bad-readiness-probe
+title: Readiness probe path misconfigured
+expected_category: probe_misconfig
+expected_fix: [rollout_undo]
+target: { namespace: demo, deployment: inventory }
+inject:
+  - ["patch", "deployment/inventory", "-n", "demo", "--type=json", "-p", '[{"op":"replace","path":"/spec/template/spec/containers/0/readinessProbe/httpGet/path","value":"/healthzz"}]']
+wait_for_alert: { alertname: DeploymentReplicasUnavailable, timeout_s: 300 }
